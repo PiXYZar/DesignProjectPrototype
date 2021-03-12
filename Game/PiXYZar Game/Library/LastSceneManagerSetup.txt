@@ -1,5 +1,9 @@
 sceneSetups:
+<<<<<<< Updated upstream
 - path: Assets/PortalStuff/Scenes/PortalTest.unity
+=======
+- path: Assets/Scenes/UnitCreation.unity
+>>>>>>> Stashed changes
   isLoaded: 1
   isActive: 1
   isSubScene: 0
