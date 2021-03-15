@@ -6,7 +6,6 @@ public class ThirdPersonCameraController : MonoBehaviour
 {
     public GameObject player;
     public Vector3 offSet;
-    public float rotationOffsetX;
     public float occlusionSmoothFactor = 0.05f;
     public float rotationSmoothFactor = 0.05f;
 
@@ -18,22 +17,29 @@ public class ThirdPersonCameraController : MonoBehaviour
 
     private Vector3 _targetPosition; // position of camera if no collision / occlusion
     private Vector3[] _targetClipPoints;
+    private Transform _target;
+    private Transform _portalTransform;
 
     private Camera _cam;
     private Vector3 _camVel;
     private float _rotationVel;
     private bool _colliding;
     private float _adjustmentDistance;
+    private float _minOffsetMagnitudeSquared;
 
     void Start()
     {
         //_clipPoints = new Vector3[5];
         _targetClipPoints = new Vector3[5];
-        _layerMask = ~(1 << player.layer);
+        playerMask = 1 << player.layer;
+        portalMask = 1 << LayerMask.NameToLayer("Portal");
+        _layerMask = ~(playerMask || portalMask);
         _cam = Camera.main;
         _camVel = Vector3.zero;
         _colliding = false;
         _adjustmentDistance = 0.0f;
+        float capsuleRadius = player.GetComponent<CapsuleCollider>.radius;
+        _minOffsetMagnitudeSquared = capsuleRadius * capsuleRadius;
     }
 
     void GetClipPoints(Vector3 position, Quaternion rotation, ref Vector3[] clipArray)
@@ -81,14 +87,19 @@ public class ThirdPersonCameraController : MonoBehaviour
             return minDistance;
     }
 
-    void MoveTowardsPlayer()
+    void MoveTowardsTarget()
     {
-        _targetPosition = player.transform.position + offSet;
+        _target = player.transform;
+
+        if (player.EnteredPortal || (player.InsidePortal && !player.ExitedPortal))
+            _target = _portalTransform;
+
+        _targetPosition = _target.position + offSet;
 
         if (_colliding)
         {
             float adjustedDeltaY = offSet.y * _adjustmentDistance / offSet.z;
-            Vector3 adjustedPosition = player.transform.position + player.transform.rotation * new Vector3(0.0f, adjustedDeltaY, _adjustmentDistance);
+            Vector3 adjustedPosition = _target.position + _target.rotation * new Vector3(0.0f, adjustedDeltaY, _adjustmentDistance);
             transform.position = Vector3.SmoothDamp(transform.position, adjustedPosition, ref _camVel, occlusionSmoothFactor);
         }
         else
@@ -97,29 +108,67 @@ public class ThirdPersonCameraController : MonoBehaviour
         }
     }
 
-    void LookAtPlayer()
+    void LookAtTarget()
     {
         //float rotationY = Mathf.SmoothDampAngle(transform.eulerAngles.y, player.transform.eulerAngles.y, ref _rotationVel, rotationSmoothFactor);
         //float rotationX = Mathf.SmoothDampAngle(transform.eulerAngles.x, rotationOffsetX * Mathf.PI / 180.0f, ref _rotationVel, rotationSmoothFactor);
         //transform.rotation = Quaternion.Euler(rotationOffsetX * Mathf.PI / 180.0f, rotationY, 0);
-        Quaternion targetRotation = Quaternion.LookRotation(player.transform.position - transform.position);
+
+        _target = player.transform;
+
+        if (player.EnteredPortal || (player.InsidePortal && !player.ExitedPortal))
+            _target = _portalTransform;
+
+        Quaternion targetRotation = Quaternion.LookRotation(_target.position - transform.position);
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, 100 * Time.deltaTime);
     }
 
     void Update()
     {
-
+        float dist = (player.transform.position - transform.position).sqrMagnitude;
+        Renderer rend = player.GetComponent<MeshRenderer>;
+        if (dist < _minOffsetMagnitudeSquared)
+        {
+            rend.enabled = false;
+        }
+        else
+        {
+            rend.enabled = true;
+        }
     }
 
     void FixedUpdate()
     {
-        MoveTowardsPlayer();
-        LookAtPlayer();
+        // check whether player has entered portal or exited portal 
+        if (player.EnteredPortal)
+        {
+            // detach camera from parent Player
+            gameObject.parent = null;
+
+            // get last position of player and slowly move towards it
+            _portalTransform = player.transform;
+        }
+
+        if (player.ExitedPortal)
+        {
+            // re-attach camera to parent Player
+            gameObject.parent = player;
+        }
+
+        // move and rotate camera 
+        MoveTowardsTarget();
+        LookAtTarget();
 
         //GetClipPoints(transform.position, transform.rotation, ref _clipPoints);
         GetClipPoints(_targetPosition, transform.rotation, ref _targetClipPoints);
 
         _adjustmentDistance = -1 * GetAdjustmentDistance(player.transform.position);
         _colliding = IsOccluded(player.transform.position);
+
+        // set back to false
+        if (player.EnteredPortal)
+            player.EnteredPortal = false;
+        if (player.ExitedPortal)
+            player.ExitedPortal = false;
     }
 }

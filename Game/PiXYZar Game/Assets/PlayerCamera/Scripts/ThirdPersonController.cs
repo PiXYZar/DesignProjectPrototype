@@ -4,6 +4,18 @@ using UnityEngine;
 
 public class ThirdPersonController : MonoBehaviour
 {
+    public class RigidbodyProperties
+    {
+        public float angularDrag;
+        public float angularVelocity;
+        public float drag;
+        public float inertiaTensor;
+        public float inertiaTensorRotation;
+        public float velocity;
+    }
+
+    public RigidbodyProperties rbProperties = new RigidbodyProperties();
+
     public float userInputDelay = 0.1f;
 
     public float walkingSpeed = 3;
@@ -23,6 +35,14 @@ public class ThirdPersonController : MonoBehaviour
     private float _verticalVel;
 
     private int _layerMask;
+
+    private float _enteredPortal = false;
+    private float _exitedPortal = false;
+    private float _insidePortal = false;
+
+    public float EnteredPortal { get { return _enteredPortal; } set { _enteredPortal = value; } }
+    public float ExitedPortal { get { return _exitedPortal; } set { _exitedPortal = value; } }
+    public float InsidePortal { get { return _insidePortal; } set { _insidePortal = value; } }
 
     void Awake()
     {
@@ -145,5 +165,71 @@ public class ThirdPersonController : MonoBehaviour
         Jump();
 
         _rb.velocity = transform.TransformDirection(_playerVel);
+    }
+
+
+    void onTriggerEnter(Collider collider)
+    {
+        if (collider.tag.Equals("Portal"))
+        {
+            _enteredPortal = true;
+        }
+    }
+
+    void onTriggerExit(Collider collider)
+    {
+        if (collider.tag.Equals("Portal"))
+        {
+            _insidePortal = false;
+            _exitedPortal = true;
+        }
+    }
+
+    void onTriggerStay(COllider collider)
+    {
+        if (collider.tag.Equals("Portal"))
+        {
+            _insidePortal = true;
+        }
+    }
+
+    void InterruptRigidbody()
+    {
+        rbProperties.angularDrag = _rb.angularDrag;
+        rbProperties.angularVelocity = _rb.angularVelocity;
+        rbProperties.drag = _rb.drag;
+        rbProperties.inertiaTensor = _rb.inertiaTensor;
+        rbProperties.inertiaTensorRotation = _rb.inertiaTensorRotation;
+        //rbProperties.velocity = _rb.velocity;
+
+        _rb.angularDrag = _rb.angularVelocity = _rb.drag =
+             _rb.inertiaTensor = _rb.inertiaTensorRotation = _rb.velocity = 0.0;
+    }
+
+    void ReturnRigidbodyProperties()
+    {
+        _rb.angularDrag = rbProperties.angularDrag;
+        _rb.angularVelocity = rbProperties.angularVelocity;
+        _rb.drag = rbProperties.drag;
+        _rb.inertiaTensor = rbProperties.inertiaTensor;
+        _rb.inertiaTensorRotation = rbProperties.inertiaTensorRotation;
+        //_rb.velocity = rbProperties.velocity;
+    }
+
+
+    public override void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot)
+    {
+        // first store values of rigid body then set them to zero 
+        InterruptRigidbody();
+
+        // perform teleportation
+        _rb.position = pos;
+        _rb.rotation = rot;
+        _rb.velocity = toPortal.TransformVector(fromPortal.InverseTransformVector(_rb.velocity));
+        _verticalVel = _rb.velocity.y;
+        Physics.SyncTransforms();
+
+        // return rigid body properties 
+        ReturnRigidbodyProperties();
     }
 }
