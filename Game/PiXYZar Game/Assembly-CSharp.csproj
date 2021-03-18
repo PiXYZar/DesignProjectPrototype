@@ -55,6 +55,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\PlayerCamera\Scripts\ExternalCameraController.cs" />
      <Compile Include="Assets\PlayerCamera\Scripts\ThirdPersonCameraController.cs" />
      <Compile Include="Assets\PlayerCamera\Scripts\ThirdPersonController.cs" />
      <Compile Include="Assets\PortalStuff\Scripts\Core\CameraUtility.cs" />

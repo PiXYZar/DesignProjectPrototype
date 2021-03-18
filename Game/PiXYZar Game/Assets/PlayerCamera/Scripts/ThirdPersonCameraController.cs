@@ -26,19 +26,21 @@ public class ThirdPersonCameraController : MonoBehaviour
     private bool _colliding;
     private float _adjustmentDistance;
     private float _minOffsetMagnitudeSquared;
+    private ThirdPersonController _playerScript;
 
     void Start()
     {
         //_clipPoints = new Vector3[5];
+        _playerScript = player.GetComponent<ThirdPersonController>();
         _targetClipPoints = new Vector3[5];
-        playerMask = 1 << player.layer;
-        portalMask = 1 << LayerMask.NameToLayer("Portal");
-        _layerMask = ~(playerMask || portalMask);
+        LayerMask playerMask = 1 << player.layer;
+        LayerMask portalMask = 1 << LayerMask.NameToLayer("Portal");
+        _layerMask = ~(playerMask | portalMask);
         _cam = Camera.main;
         _camVel = Vector3.zero;
         _colliding = false;
         _adjustmentDistance = 0.0f;
-        float capsuleRadius = player.GetComponent<CapsuleCollider>.radius;
+        float capsuleRadius = player.GetComponent<CapsuleCollider>().radius;
         _minOffsetMagnitudeSquared = capsuleRadius * capsuleRadius;
     }
 
@@ -91,7 +93,7 @@ public class ThirdPersonCameraController : MonoBehaviour
     {
         _target = player.transform;
 
-        if (player.EnteredPortal || (player.InsidePortal && !player.ExitedPortal))
+        if (_playerScript.EnteredPortal || (_playerScript.InsidePortal && !_playerScript.ExitedPortal))
             _target = _portalTransform;
 
         _targetPosition = _target.position + offSet;
@@ -116,7 +118,7 @@ public class ThirdPersonCameraController : MonoBehaviour
 
         _target = player.transform;
 
-        if (player.EnteredPortal || (player.InsidePortal && !player.ExitedPortal))
+        if (_playerScript.EnteredPortal || (_playerScript.InsidePortal && !_playerScript.ExitedPortal))
             _target = _portalTransform;
 
         Quaternion targetRotation = Quaternion.LookRotation(_target.position - transform.position);
@@ -125,8 +127,33 @@ public class ThirdPersonCameraController : MonoBehaviour
 
     void Update()
     {
+
+    }
+
+    void FixedUpdate()
+    {
+        // check whether player has entered portal or exited portal 
+        if (_playerScript.EnteredPortal)
+        {
+            // detach camera from parent Player
+            gameObject.transform.SetParent(null);
+
+            // get last position of player and slowly move towards it
+            _portalTransform = player.transform;
+        }
+
+        if (_playerScript.ExitedPortal)
+        {
+            // re-attach camera to parent Player
+            gameObject.transform.SetParent(player.transform);
+
+            // shift camera inside player 
+            _portalTransform.position = player.transform.position; 
+        }
+
+        // make player invisible if distance to player too low 
         float dist = (player.transform.position - transform.position).sqrMagnitude;
-        Renderer rend = player.GetComponent<MeshRenderer>;
+        Renderer rend = player.GetComponent<MeshRenderer>();
         if (dist < _minOffsetMagnitudeSquared)
         {
             rend.enabled = false;
@@ -134,25 +161,6 @@ public class ThirdPersonCameraController : MonoBehaviour
         else
         {
             rend.enabled = true;
-        }
-    }
-
-    void FixedUpdate()
-    {
-        // check whether player has entered portal or exited portal 
-        if (player.EnteredPortal)
-        {
-            // detach camera from parent Player
-            gameObject.parent = null;
-
-            // get last position of player and slowly move towards it
-            _portalTransform = player.transform;
-        }
-
-        if (player.ExitedPortal)
-        {
-            // re-attach camera to parent Player
-            gameObject.parent = player;
         }
 
         // move and rotate camera 
@@ -166,9 +174,9 @@ public class ThirdPersonCameraController : MonoBehaviour
         _colliding = IsOccluded(player.transform.position);
 
         // set back to false
-        if (player.EnteredPortal)
-            player.EnteredPortal = false;
-        if (player.ExitedPortal)
-            player.ExitedPortal = false;
+        if (_playerScript.EnteredPortal)
+            _playerScript.EnteredPortal = false;
+        if (_playerScript.ExitedPortal)
+            _playerScript.ExitedPortal = false;
     }
 }

@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ThirdPersonController : MonoBehaviour
+public class ThirdPersonController : PortalTraveller
 {
     public class RigidbodyProperties
     {
         public float angularDrag;
-        public float angularVelocity;
+        public Vector3 angularVelocity;
         public float drag;
-        public float inertiaTensor;
-        public float inertiaTensorRotation;
-        public float velocity;
+        public Vector3 inertiaTensor;
+        public Quaternion inertiaTensorRotation;
+        //public double velocity;
     }
+
+    public GameObject tower;
 
     public RigidbodyProperties rbProperties = new RigidbodyProperties();
 
@@ -26,6 +28,8 @@ public class ThirdPersonController : MonoBehaviour
 
     public bool lockCursor = false;
 
+    private Vector3 _towerCentre;
+
     private Rigidbody _rb;
     private CapsuleCollider _collider;
 
@@ -36,13 +40,13 @@ public class ThirdPersonController : MonoBehaviour
 
     private int _layerMask;
 
-    private float _enteredPortal = false;
-    private float _exitedPortal = false;
-    private float _insidePortal = false;
+    private bool _enteredPortal = false;
+    private bool _exitedPortal = false;
+    private bool _insidePortal = false;
 
-    public float EnteredPortal { get { return _enteredPortal; } set { _enteredPortal = value; } }
-    public float ExitedPortal { get { return _exitedPortal; } set { _exitedPortal = value; } }
-    public float InsidePortal { get { return _insidePortal; } set { _insidePortal = value; } }
+    public bool EnteredPortal { get { return _enteredPortal; } set { _enteredPortal = value; } }
+    public bool ExitedPortal { get { return _exitedPortal; } set { _exitedPortal = value; } }
+    public bool InsidePortal { get { return _insidePortal; } set { _insidePortal = value; } }
 
     void Awake()
     {
@@ -75,6 +79,8 @@ public class ThirdPersonController : MonoBehaviour
 
         // ignore player, detect anything else 
         _layerMask = ~(1 << LayerMask.NameToLayer("Player"));
+
+        _towerCentre = tower.GetComponent<Renderer>().bounds.center;
     }
 
     bool IsGrounded()
@@ -185,7 +191,7 @@ public class ThirdPersonController : MonoBehaviour
         }
     }
 
-    void onTriggerStay(COllider collider)
+    void onTriggerStay(Collider collider)
     {
         if (collider.tag.Equals("Portal"))
         {
@@ -202,8 +208,10 @@ public class ThirdPersonController : MonoBehaviour
         rbProperties.inertiaTensorRotation = _rb.inertiaTensorRotation;
         //rbProperties.velocity = _rb.velocity;
 
-        _rb.angularDrag = _rb.angularVelocity = _rb.drag =
-             _rb.inertiaTensor = _rb.inertiaTensorRotation = _rb.velocity = 0.0;
+        _rb.angularDrag = _rb.drag = 0.0f;
+        _rb.angularVelocity = _rb.inertiaTensor = Vector3.zero;
+        _rb.inertiaTensorRotation = Quaternion.identity;
+        // _rb.velocity;
     }
 
     void ReturnRigidbodyProperties()
@@ -215,7 +223,6 @@ public class ThirdPersonController : MonoBehaviour
         _rb.inertiaTensorRotation = rbProperties.inertiaTensorRotation;
         //_rb.velocity = rbProperties.velocity;
     }
-
 
     public override void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot)
     {
