@@ -40,7 +40,7 @@ public class ThirdPersonCameraController : MonoBehaviour
         _camVel = Vector3.zero;
         _colliding = false;
         _adjustmentDistance = 0.0f;
-        float capsuleRadius = player.GetComponent<CapsuleCollider>().radius;
+        float capsuleRadius = player.GetComponentInChildren<CapsuleCollider>().radius;
         _minOffsetMagnitudeSquared = capsuleRadius * capsuleRadius;
     }
 
@@ -153,7 +153,7 @@ public class ThirdPersonCameraController : MonoBehaviour
 
         // make player invisible if distance to player too low 
         float dist = (player.transform.position - transform.position).sqrMagnitude;
-        Renderer rend = player.GetComponent<MeshRenderer>();
+        Renderer rend = player.GetComponentInChildren<MeshRenderer>();
         if (dist < _minOffsetMagnitudeSquared)
         {
             rend.enabled = false;

@@ -57,8 +57,8 @@ public class ThirdPersonController : PortalTraveller
             Debug.LogError("Player asset requires a rigid body component.");
 
         // check if component has collider, if yes, store y bounds 
-        if (GetComponent<CapsuleCollider>())
-            _collider = GetComponent<CapsuleCollider>();
+        if (GetComponentInChildren<CapsuleCollider>())
+            _collider = GetComponentInChildren<CapsuleCollider>();
         else
             Debug.LogError("Player asset requires a capsule collider component.");
     }
@@ -111,6 +111,13 @@ public class ThirdPersonController : PortalTraveller
         // check whether player is running or walking 
         float speed = (Input.GetKey(KeyCode.LeftShift)) ? runningSpeed : walkingSpeed;
 
+        // 
+        Vector3 playerLocal = tower.transform.InverseTransformPoint(transform.position);
+        //Debug.Log(playerRel2Tower);
+        float hypotenuse = new Vector2(playerLocal.x, playerLocal.z).magnitude;
+        float xDir = -playerLocal.z / hypotenuse;
+        float zDir = playerLocal.x / hypotenuse;
+
         float xVel, zVel;
         if (Mathf.Abs(_inputX) > userInputDelay)
         {
@@ -119,6 +126,7 @@ public class ThirdPersonController : PortalTraveller
         else
         {
             xVel = 0.0f;
+            //xDir = 0.0f;
         }
 
         if (Mathf.Abs(_inputZ) > userInputDelay)
@@ -128,10 +136,33 @@ public class ThirdPersonController : PortalTraveller
         else
         {
             zVel = 0.0f;
+            //zDir = 0.0f;
         }
+        //Debug.Log("input x: " + xVel + ", z: " + zVel);
 
         // set velocity, normalizing it for diagonal movement 
-        _playerVel = new Vector3(xVel, 0.0f, zVel).normalized * speed;
+        //Debug.Log(xVel);
+        //Debug.Log(xDir);
+        //Debug.Log(zVel);
+        //Debug.Log(zDir);
+        //Debug.Log("position x: " + playerLocal.x + ", z: " + playerLocal.z);
+        //Debug.Log(playerRel2Tower.x / hypotenuse);
+        //Debug.Log("direction x: " + xDir + ", z: " + zDir);
+
+        if (Mathf.Abs(_inputX) > userInputDelay || Mathf.Abs(_inputZ) > userInputDelay)
+        {
+            //Vector2 combinedVectors = (new Vector2(xVel, zVel) + new Vector2(xDir, zDir * -1)) / 2.0f;
+            //_playerVel = new Vector3(xVel * xDir, 0.0f, zVel * zDir).normalized * speed;
+            //_playerVel = new Vector3(combinedVectors.x, 0.0f, combinedVectors.y).normalized * speed;
+            //Debug.Log("direction x: " + xDir * xVel + ", z: " + zDir * xVel);
+            Debug.Log(xVel);
+            Quaternion targetRotation = Quaternion.Euler(0.0f, Mathf.Abs(xVel) * 90.0f, 0.0f);
+            Vector3 forward = new Vector3(xDir * zVel, 0.0f, zDir * zVel);
+            Vector3 sideways = targetRotation * new Vector3(xDir * xVel, 0.0f, zDir * xVel);
+            _playerVel = (forward + sideways).normalized * speed;
+        } 
+        else
+            _playerVel = Vector3.zero;
     }
 
     void Jump()
