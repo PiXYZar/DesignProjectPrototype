@@ -126,7 +126,6 @@ public class ThirdPersonController : PortalTraveller
         else
         {
             xVel = 0.0f;
-            //xDir = 0.0f;
         }
 
         if (Mathf.Abs(_inputZ) > userInputDelay)
@@ -136,26 +135,12 @@ public class ThirdPersonController : PortalTraveller
         else
         {
             zVel = 0.0f;
-            //zDir = 0.0f;
         }
-        //Debug.Log("input x: " + xVel + ", z: " + zVel);
 
-        // set velocity, normalizing it for diagonal movement 
-        //Debug.Log(xVel);
-        //Debug.Log(xDir);
-        //Debug.Log(zVel);
-        //Debug.Log(zDir);
-        //Debug.Log("position x: " + playerLocal.x + ", z: " + playerLocal.z);
-        //Debug.Log(playerRel2Tower.x / hypotenuse);
-        //Debug.Log("direction x: " + xDir + ", z: " + zDir);
-
+        // if any of buttons WASD pressed, move, else don't move
         if (Mathf.Abs(_inputX) > userInputDelay || Mathf.Abs(_inputZ) > userInputDelay)
         {
-            //Vector2 combinedVectors = (new Vector2(xVel, zVel) + new Vector2(xDir, zDir * -1)) / 2.0f;
-            //_playerVel = new Vector3(xVel * xDir, 0.0f, zVel * zDir).normalized * speed;
-            //_playerVel = new Vector3(combinedVectors.x, 0.0f, combinedVectors.y).normalized * speed;
-            //Debug.Log("direction x: " + xDir * xVel + ", z: " + zDir * xVel);
-            Debug.Log(xVel);
+            // create sideways and forward movement and combine them 
             Quaternion targetRotation = Quaternion.Euler(0.0f, Mathf.Abs(xVel) * 90.0f, 0.0f);
             Vector3 forward = new Vector3(xDir * zVel, 0.0f, zDir * zVel);
             Vector3 sideways = targetRotation * new Vector3(xDir * xVel, 0.0f, zDir * xVel);
