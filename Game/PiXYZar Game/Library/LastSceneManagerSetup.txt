@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/PlayerCamera/Scenes/TestControllers.unity
+- path: Assets/Animations/AnimationScene.unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0
